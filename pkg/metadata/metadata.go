@@ -2,11 +2,9 @@ package metadata
 
 import (
 	"bytes"
-	"crypto"
 	_ "crypto/md5"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log/slog"
 	"os"
 	"time"
@@ -14,14 +12,11 @@ import (
 	"github.com/barasher/go-exiftool"
 )
 
-type Hash []byte
-
 const METADATA_EXT = ".meta.json"
 
 type Metadata struct {
 	FullFilepath string
 	CreatedAt    time.Time
-	UniqueID     string
 	FileSize     int64
 	FileHash     Hash
 	FileHashType string
@@ -46,11 +41,6 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 		return nil, fmt.Errorf("could not get createdAt: %w", err)
 	}
 
-	uniqueID, err := fileInfo.GetString("ImageUniqueID")
-	if err != nil {
-		return nil, fmt.Errorf("could not get uniqueID: %w", err)
-	}
-
 	fileSize, err := getFileSize(filename)
 	if err != nil {
 		return nil, fmt.Errorf("could not get fizeSize: %w", err)
@@ -64,7 +54,6 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 	return &Metadata{
 		FullFilepath: filename,
 		CreatedAt:    createdAt,
-		UniqueID:     uniqueID,
 		FileSize:     fileSize,
 		FileHash:     h,
 		FileHashType: HASH_TYPE.String(),
@@ -73,9 +62,6 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 
 func (meta *Metadata) Equal(other *Metadata) bool {
 	if meta.CreatedAt != other.CreatedAt {
-		return false
-	}
-	if meta.UniqueID != other.UniqueID {
 		return false
 	}
 	if meta.FileSize != other.FileSize {
@@ -112,44 +98,13 @@ func Load(filename string) (*Metadata, error) {
 	return meta, nil
 }
 
-func NewOrLoad(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
-	// Try loading existing
-	meta, err := Load(filename)
-	if err == nil {
-		return meta, nil
+func NewOrLoad(tool *exiftool.Exiftool, filename string, tryLoading bool) (*Metadata, error) {
+	if tryLoading {
+		// Try loading existing
+		meta, err := Load(filename)
+		if err == nil {
+			return meta, nil
+		}
 	}
 	return New(tool, filename)
-}
-
-var datetimeFormat = "2006:01:02 15:04:05-07:00"
-
-func parseTimeField(value any) (time.Time, error) {
-	val, ok := value.(string)
-	if !ok {
-		return time.Time{}, fmt.Errorf("value is not string, but %T", value)
-	}
-	return time.Parse(datetimeFormat, val)
-}
-
-func getFileSize(filename string) (int64, error) {
-	info, err := os.Stat(filename)
-	if err != nil {
-		return 0, err
-	}
-	return info.Size(), nil
-}
-
-const HASH_TYPE = crypto.MD5
-
-func getFileHash(filename string) (Hash, error) {
-	f, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	h := HASH_TYPE.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return nil, err
-	}
-	return h.Sum(nil), nil
 }
