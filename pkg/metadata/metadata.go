@@ -3,6 +3,7 @@ package metadata
 import (
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"github.com/barasher/go-exiftool"
@@ -11,6 +12,8 @@ import (
 type Metadata struct {
 	FullFilepath string
 	CreatedAt    time.Time
+	UniqueID     string
+	FileSize     int64
 }
 
 func Read(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
@@ -19,14 +22,31 @@ func Read(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 		slog.Error("fileInfo: coult not get metadata", "file", fileInfo.File, "err", err)
 		return nil, err
 	}
+
+	// for k, v := range fileInfo.Fields {
+	// 	slog.Info("fileInfo", "file", fileInfo.File, "key", k, "value", v, "value.type", fmt.Sprintf("%T", v))
+	// }
+
 	createdAt, err := parseTimeField(fileInfo.Fields["CreateDate"])
 	if err != nil {
-		return nil, fmt.Errorf("could not get created at: %w", err)
+		return nil, fmt.Errorf("could not get createdAt: %w", err)
 	}
-	slog.Info("Metadata", "createdAt", createdAt)
+
+	uniqueID, err := fileInfo.GetString("ImageUniqueID")
+	if err != nil {
+		return nil, fmt.Errorf("could not get uniqueID: %w", err)
+	}
+
+	fileSize, err := getFileSize(filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not get fizeSize: %w", err)
+	}
+
 	return &Metadata{
 		FullFilepath: filename,
 		CreatedAt:    createdAt,
+		UniqueID:     uniqueID,
+		FileSize:     fileSize,
 	}, nil
 }
 
@@ -38,4 +58,12 @@ func parseTimeField(value any) (time.Time, error) {
 		return time.Time{}, fmt.Errorf("value is not string, but %T", value)
 	}
 	return time.Parse(datetimeFormat, val)
+}
+
+func getFileSize(filename string) (int64, error) {
+	info, err := os.Stat(filename)
+	if err != nil {
+		return 0, err
+	}
+	return info.Size(), nil
 }

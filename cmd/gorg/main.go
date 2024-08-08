@@ -71,16 +71,6 @@ func readPhotos(tool *exiftool.Exiftool, filenames []string) error {
 		return err
 	}
 	slog.Info("readPhotos", "meta", meta)
-	// fileInfos := tool.ExtractMetadata(filenames[0])
-	// for _, fileInfo := range fileInfos {
-	// 	if err := fileInfo.Err; err != nil {
-	// 		slog.Error("fileInfo: coult not get metadata", "file", fileInfo.File, "err", err)
-	// 		return err
-	// 	}
-	// 	for k, v := range fileInfo.Fields {
-	// 		slog.Info("fileInfo: ", "file", fileInfo.File, "key", k, "value", v)
-	// 	}
-	// }
 	return nil
 }
 
@@ -93,12 +83,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("could not list photos: %v", err)
 	}
-	log.Printf("photos: %+v", photos)
 	tool, err := exiftool.NewExiftool()
 	if err != nil {
 		log.Fatalf("could not load exiftool: %v", err)
 	}
 	defer tool.Close()
+
 	if err := readPhotos(tool, photos); err != nil {
 		log.Fatalf("could not load photo: %v", err)
 	}
