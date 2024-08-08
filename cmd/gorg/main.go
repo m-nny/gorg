@@ -71,6 +71,9 @@ func readPhotos(tool *exiftool.Exiftool, filenames []string) error {
 		return err
 	}
 	slog.Info("readPhotos", "meta", meta)
+	if err := meta.Save(); err != nil {
+		return err
+	}
 	return nil
 }
 

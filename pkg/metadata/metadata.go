@@ -1,7 +1,12 @@
 package metadata
 
 import (
+	"bytes"
+	"crypto"
+	_ "crypto/md5"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"time"
@@ -9,11 +14,17 @@ import (
 	"github.com/barasher/go-exiftool"
 )
 
+type Hash []byte
+
+const METADATA_EXT = ".meta.json"
+
 type Metadata struct {
 	FullFilepath string
 	CreatedAt    time.Time
 	UniqueID     string
 	FileSize     int64
+	FileHash     Hash
+	FileHashType string
 }
 
 func Read(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
@@ -42,12 +53,47 @@ func Read(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 		return nil, fmt.Errorf("could not get fizeSize: %w", err)
 	}
 
+	h, err := getFileHash(filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not get hash: %w", err)
+	}
+
 	return &Metadata{
 		FullFilepath: filename,
 		CreatedAt:    createdAt,
 		UniqueID:     uniqueID,
 		FileSize:     fileSize,
+		FileHash:     h,
+		FileHashType: HASH_TYPE.String(),
 	}, nil
+}
+
+func (meta *Metadata) Equal(other *Metadata) bool {
+	if meta.CreatedAt != other.CreatedAt {
+		return false
+	}
+	if meta.UniqueID != other.UniqueID {
+		return false
+	}
+	if meta.FileSize != other.FileSize {
+		return false
+	}
+	if meta.FileHashType != other.FileHashType {
+		return false
+	}
+	if bytes.Equal(meta.FileHash, other.FileHash) {
+		return false
+	}
+	return true
+}
+
+func (meta *Metadata) Save() error {
+	jsonString, err := json.Marshal(meta)
+	if err != nil {
+		return err
+	}
+	metaFilename := meta.FullFilepath + METADATA_EXT
+	return os.WriteFile(metaFilename, jsonString, os.ModePerm)
 }
 
 var datetimeFormat = "2006:01:02 15:04:05-07:00"
@@ -66,4 +112,19 @@ func getFileSize(filename string) (int64, error) {
 		return 0, err
 	}
 	return info.Size(), nil
+}
+
+const HASH_TYPE = crypto.MD5
+
+func getFileHash(filename string) (Hash, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	h := HASH_TYPE.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
 }
