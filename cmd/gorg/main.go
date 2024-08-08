@@ -7,6 +7,9 @@ import (
 	"log/slog"
 	"path/filepath"
 	"strings"
+
+	"github.com/barasher/go-exiftool"
+	"github.com/m-nny/gorg/pkg/metadata"
 )
 
 var (
@@ -52,13 +55,33 @@ func listAllPhotos(dirName string) ([]string, error) {
 		if !isPhotoFile(entry.Name()) {
 			return nil
 		}
-		photos = append(photos, filepath.Join(dirName, entry.Name()))
+		photos = append(photos, path)
 		return nil
 	}
+	// TODO:  WalkDir() reads entire directory into memory before proceeding to wald the dir. We probably want to yield these as we go
 	if err := filepath.WalkDir(dirName, walkFunc); err != nil {
 		return nil, err
 	}
 	return photos, nil
+}
+
+func readPhotos(tool *exiftool.Exiftool, filenames []string) error {
+	meta, err := metadata.Read(tool, filenames[0])
+	if err != nil {
+		return err
+	}
+	slog.Info("readPhotos", "meta", meta)
+	// fileInfos := tool.ExtractMetadata(filenames[0])
+	// for _, fileInfo := range fileInfos {
+	// 	if err := fileInfo.Err; err != nil {
+	// 		slog.Error("fileInfo: coult not get metadata", "file", fileInfo.File, "err", err)
+	// 		return err
+	// 	}
+	// 	for k, v := range fileInfo.Fields {
+	// 		slog.Info("fileInfo: ", "file", fileInfo.File, "key", k, "value", v)
+	// 	}
+	// }
+	return nil
 }
 
 func main() {
@@ -71,4 +94,13 @@ func main() {
 		log.Fatalf("could not list photos: %v", err)
 	}
 	log.Printf("photos: %+v", photos)
+	tool, err := exiftool.NewExiftool()
+	if err != nil {
+		log.Fatalf("could not load exiftool: %v", err)
+	}
+	defer tool.Close()
+	if err := readPhotos(tool, photos); err != nil {
+		log.Fatalf("could not load photo: %v", err)
+	}
+
 }
