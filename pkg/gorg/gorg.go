@@ -10,6 +10,7 @@ import (
 	"github.com/barasher/go-exiftool"
 	"github.com/m-nny/gorg/pkg/measure"
 	"github.com/m-nny/gorg/pkg/metadata"
+	"github.com/schollz/progressbar/v3"
 )
 
 var (
@@ -62,7 +63,9 @@ func ListAllPhotos(dirName string) ([]string, error) {
 
 func ReadPhotos(tool *exiftool.Exiftool, filenames []string, tryLoading bool) error {
 	defer measure.TimerStop(measure.Timer("ReadPhotos"))
+	bar := progressbar.Default(int64(len(filenames)), "Reading photos")
 	for _, filename := range filenames {
+		bar.Add(1)
 		meta, err := metadata.NewOrLoad(tool, filename, tryLoading)
 		if err != nil {
 			return fmt.Errorf("could not load metadata for file %q: %w", filename, err)
