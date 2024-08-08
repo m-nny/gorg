@@ -66,7 +66,7 @@ func listAllPhotos(dirName string) ([]string, error) {
 }
 
 func readPhotos(tool *exiftool.Exiftool, filenames []string) error {
-	meta, err := metadata.Read(tool, filenames[0])
+	meta, err := metadata.NewOrLoad(tool, filenames[0])
 	if err != nil {
 		return err
 	}

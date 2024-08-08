@@ -27,7 +27,10 @@ type Metadata struct {
 	FileHashType string
 }
 
-func Read(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
+func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
+	if tool == nil {
+		return nil, fmt.Errorf("exiftool is nil")
+	}
 	fileInfo := tool.ExtractMetadata(filename)[0]
 	if err := fileInfo.Err; err != nil {
 		slog.Error("fileInfo: coult not get metadata", "file", fileInfo.File, "err", err)
@@ -94,6 +97,28 @@ func (meta *Metadata) Save() error {
 	}
 	metaFilename := meta.FullFilepath + METADATA_EXT
 	return os.WriteFile(metaFilename, jsonString, os.ModePerm)
+}
+
+func Load(filename string) (*Metadata, error) {
+	metaFilename := filename + METADATA_EXT
+	jsonString, err := os.ReadFile(metaFilename)
+	if err != nil {
+		return nil, err
+	}
+	meta := &Metadata{}
+	if err := json.Unmarshal(jsonString, meta); err != nil {
+		return nil, err
+	}
+	return meta, nil
+}
+
+func NewOrLoad(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
+	// Try loading existing
+	meta, err := Load(filename)
+	if err == nil {
+		return meta, nil
+	}
+	return New(tool, filename)
 }
 
 var datetimeFormat = "2006:01:02 15:04:05-07:00"
