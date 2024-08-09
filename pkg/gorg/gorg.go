@@ -61,19 +61,21 @@ func ListAllPhotos(dirName string) ([]string, error) {
 	return photos, nil
 }
 
-func ReadPhotos(tool *exiftool.Exiftool, filenames []string, tryLoading bool) error {
+func ReadPhotos(tool *exiftool.Exiftool, filenames []string, tryLoading bool) ([]*metadata.Metadata, error) {
 	defer measure.TimerStop(measure.Timer("ReadPhotos"))
 	bar := progressbar.Default(int64(len(filenames)), "Reading photos")
+	var metas []*metadata.Metadata
 	for _, filename := range filenames {
 		bar.Add(1)
 		meta, err := metadata.NewOrLoad(tool, filename, tryLoading)
 		if err != nil {
-			return fmt.Errorf("could not load metadata for file %q: %w", filename, err)
+			return metas, fmt.Errorf("could not load metadata for file %q: %w", filename, err)
 		}
 		slog.Debug("readPhotos", "meta", meta)
+		metas = append(metas, meta)
 		if err := meta.Save(); err != nil {
-			return err
+			return metas, err
 		}
 	}
-	return nil
+	return metas, nil
 }

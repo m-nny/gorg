@@ -60,6 +60,20 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 	}, nil
 }
 
+func (meta *Metadata) Copy(newFilepath string) *Metadata {
+	return &Metadata{
+		FullFilepath: newFilepath,
+		CreatedAt:    meta.CreatedAt,
+		FileSize:     meta.FileSize,
+		FileHash:     meta.FileHash,
+		FileHashType: meta.FileHashType,
+	}
+}
+
+func (meta *Metadata) MetaFilepath() string {
+	return meta.FullFilepath + METADATA_EXT
+}
+
 func (meta *Metadata) Equal(other *Metadata) bool {
 	if meta.CreatedAt != other.CreatedAt {
 		return false
