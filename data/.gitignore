@@ -1,2 +1,3 @@
 testground/*
 !testground/.gitkeep
+/output
