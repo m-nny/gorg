@@ -13,12 +13,17 @@ import (
 var (
 	targetFolder       = flag.String("folder", "", "target folder containing images")
 	tryLoadingMetadata = flag.Bool("load_metadata", false, "try to load existing metadata json")
+	cpuProfile         = flag.Bool("cpu_profile", false, "run cpu profiling")
 )
 
 func main() {
 	flag.Parse()
 	if *targetFolder == "" {
 		log.Fatalf("should provide target folder")
+	}
+	if *cpuProfile {
+		stopProfile := measure.StartCPUProfile()
+		defer stopProfile()
 	}
 	measure.PrintMemUsage()
 
