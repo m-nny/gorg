@@ -32,20 +32,14 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 		return nil, err
 	}
 
-	// for k, v := range fileInfo.Fields {
-	// 	slog.Info("fileInfo", "file", fileInfo.File, "key", k, "value", v, "value.type", fmt.Sprintf("%T", v))
-	// }
-
 	createdAt, err := parseTimeField(fileInfo.Fields["CreateDate"])
 	if err != nil {
 		return nil, fmt.Errorf("could not get createdAt: %w", err)
 	}
-
 	fileSize, err := getFileSize(filename)
 	if err != nil {
 		return nil, fmt.Errorf("could not get fizeSize: %w", err)
 	}
-
 	h, err := getFileHash(filename)
 	if err != nil {
 		return nil, fmt.Errorf("could not get hash: %w", err)
@@ -84,7 +78,7 @@ func (meta *Metadata) Equal(other *Metadata) bool {
 	if meta.FileHashType != other.FileHashType {
 		return false
 	}
-	if bytes.Equal(meta.FileHash, other.FileHash) {
+	if !bytes.Equal(meta.FileHash, other.FileHash) {
 		return false
 	}
 	return true
@@ -115,8 +109,7 @@ func Load(filename string) (*Metadata, error) {
 func NewOrLoad(tool *exiftool.Exiftool, filename string, tryLoading bool) (*Metadata, error) {
 	if tryLoading {
 		// Try loading existing
-		meta, err := Load(filename)
-		if err == nil {
+		if meta, err := Load(filename); err == nil {
 			return meta, nil
 		}
 	}

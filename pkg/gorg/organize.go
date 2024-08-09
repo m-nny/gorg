@@ -24,11 +24,11 @@ func isFolderEmpty(folder string) (bool, error) {
 	return len(files) == 0, nil
 }
 
-type MetaMap map[string][]*metadata.Metadata
+type MetaMap map[string]metadata.MetadataList
 
 func (m MetaMap) Add(meta *metadata.Metadata) {
 	newFolder := meta.CreatedAt.Format(SUBFOLDER_FORMAT)
-	m[newFolder] = append(m[newFolder], meta)
+	m[newFolder] = m[newFolder].Add(meta)
 }
 
 func (m MetaMap) organize(destFolder string) error {
