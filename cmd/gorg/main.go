@@ -27,7 +27,9 @@ func main() {
 	}
 	measure.PrintMemUsage()
 
-	tool, err := exiftool.NewExiftool()
+	tool, err := exiftool.NewExiftool(
+		exiftool.Api("IgnoreTags=All"), exiftool.Api("RequestTags=CreateDate"),
+	)
 	if err != nil {
 		log.Fatalf("could not load exiftool: %v", err)
 	}

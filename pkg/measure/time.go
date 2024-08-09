@@ -10,5 +10,5 @@ func Timer(msg string) (string, time.Time) {
 }
 
 func TimerStop(msg string, start time.Time) {
-	slog.Info(msg, "time.Since", time.Since(start))
+	slog.Info(msg, "time.Since", time.Since(start).Truncate(time.Millisecond))
 }
