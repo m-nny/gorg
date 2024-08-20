@@ -48,10 +48,7 @@ func (m MetaMap) organize(destFolder string) error {
 			newFilename := fmt.Sprintf("%04d%s", i, filepath.Ext(meta.FullFilepath))
 			newFilepath := filepath.Join(newFolder, newFilename)
 			slog.Debug("Organize()", "newFilename", newFilename, "newFolder", newFolder, "newFilepath", newFilepath, "meta", meta)
-			if err := os.Link(meta.FullFilepath, newFilepath); err != nil {
-				return err
-			}
-			if err := meta.Copy(newFilepath).Save(); err != nil {
+			if _, err := meta.CloneTo(newFilepath); err != nil {
 				return err
 			}
 		}

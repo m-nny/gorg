@@ -15,11 +15,12 @@ import (
 const METADATA_EXT = ".meta.json"
 
 type Metadata struct {
-	FullFilepath string
-	CreatedAt    time.Time
-	FileSize     int64
-	FileHash     Hash
-	FileHashType string
+	FullFilepath     string
+	OriginalFilepath string `json:",omitempty"`
+	CreatedAt        time.Time
+	FileSize         int64
+	FileHash         Hash
+	FileHashType     string
 }
 
 func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
@@ -46,22 +47,33 @@ func New(tool *exiftool.Exiftool, filename string) (*Metadata, error) {
 	}
 
 	return &Metadata{
-		FullFilepath: filename,
-		CreatedAt:    createdAt,
-		FileSize:     fileSize,
-		FileHash:     h,
-		FileHashType: HASH_TYPE.String(),
+		FullFilepath:     filename,
+		OriginalFilepath: filename,
+		CreatedAt:        createdAt,
+		FileSize:         fileSize,
+		FileHash:         h,
+		FileHashType:     HASH_TYPE.String(),
 	}, nil
 }
 
-func (meta *Metadata) Copy(newFilepath string) *Metadata {
-	return &Metadata{
-		FullFilepath: newFilepath,
-		CreatedAt:    meta.CreatedAt,
-		FileSize:     meta.FileSize,
-		FileHash:     meta.FileHash,
-		FileHashType: meta.FileHashType,
+func (meta *Metadata) CloneTo(newFilepath string) (*Metadata, error) {
+	newMeta := &Metadata{
+		FullFilepath:     newFilepath,
+		OriginalFilepath: meta.FullFilepath,
+		CreatedAt:        meta.CreatedAt,
+		FileSize:         meta.FileSize,
+		FileHash:         meta.FileHash,
+		FileHashType:     meta.FileHashType,
 	}
+	if err := os.Link(
+		newMeta.OriginalFilepath,
+		newMeta.FullFilepath); err != nil {
+		return nil, err
+	}
+	if err := newMeta.Save(); err != nil {
+		return nil, err
+	}
+	return newMeta, nil
 }
 
 func (meta *Metadata) MetaFilepath() string {
