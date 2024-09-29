@@ -20,6 +20,7 @@ var (
 	cpuProfile         = flag.Bool("cpu_profile", false, "run cpu profiling")
 	logLevel           = logutils.Level("log", slog.LevelInfo, "logging level")
 	limit              = flag.Int("limit", -1, "limit number of photos to process")
+	organize           = flag.Bool("organize", false, "sets if script should reorganize images")
 )
 
 func main() {
@@ -27,7 +28,7 @@ func main() {
 	if *inputFolder == "" {
 		log.Fatalf("should provide target folder")
 	}
-	if *destFolder == "" {
+	if *organize && *destFolder == "" {
 		log.Fatalf("should provide target folder")
 	}
 	slog.SetLogLoggerLevel(*logLevel)
@@ -62,8 +63,10 @@ func main() {
 
 	measure.PrintMemUsage()
 
-	if err := gorg.BulkOrganize(*destFolder, metas); err != nil {
-		log.Fatalf("could not organize photos: %v", err)
+	if *organize {
+		if err := gorg.BulkOrganize(*destFolder, metas); err != nil {
+			log.Fatalf("could not organize photos: %v", err)
+		}
 	}
 
 	// Force GC to clear up, should see a memory drop
