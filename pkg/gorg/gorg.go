@@ -67,6 +67,7 @@ func ReadPhotos(tool *exiftool.Exiftool, filenames []string, tryLoading bool) ([
 	var metas []*metadata.Metadata
 	for _, filename := range filenames {
 		bar.Add(1)
+		bar.Describe(getFileDescription(filename))
 		meta, err := metadata.NewOrLoad(tool, filename, tryLoading)
 		if err != nil {
 			return metas, fmt.Errorf("could not load metadata for file %q: %w", filename, err)
@@ -78,4 +79,13 @@ func ReadPhotos(tool *exiftool.Exiftool, filenames []string, tryLoading bool) ([
 		}
 	}
 	return metas, nil
+}
+
+const MAX_DESCRIPTION_LEN = 40
+
+func getFileDescription(filename string) string {
+	if len(filename) <= MAX_DESCRIPTION_LEN+3 {
+		return filename
+	}
+	return "..." + filename[len(filename)-MAX_DESCRIPTION_LEN:]
 }
